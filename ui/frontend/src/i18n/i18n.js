@@ -3,6 +3,11 @@ import { initReactI18next } from 'react-i18next'
 import en from './locales/en.json'
 import zh from './locales/zh.json'
 
+const detectLanguage = () => {
+  const lang = navigator.language || navigator.userLanguage || 'en'
+  return lang.startsWith('zh') ? 'zh' : 'en'
+}
+
 i18n
   .use(initReactI18next)
   .init({
@@ -10,7 +15,7 @@ i18n
       en: { translation: en },
       zh: { translation: zh },
     },
-    lng: 'en',
+    lng: detectLanguage(),
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false,
