@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GetConfig, SaveConfig, PrepareOVMS, ResetOVMS, ResetModels, CheckStatus, GetStartupEnabled, SetStartup, SearchModels, ExportTextGen, ExportEmbeddings, PullModel, StartOVMS, StopOVMS, IsOVMSRunning, GetOVMSRuntimeStatus, GetInstalledModels, DeleteInstalledModel, GetAvailableDevices, Chat, GetPipelineFilters, RunBenchmark, UpdateOVMSToLatest, GetSystemLanguage } from '../wailsjs/go/main/App'
+import { GetConfig, SaveConfig, PrepareOVMS, ResetOVMS, ResetModels, CheckStatus, GetStartupEnabled, SetStartup, SearchModels, ExportTextGen, ExportEmbeddings, PullModel, StartOVMS, StopOVMS, IsOVMSRunning, GetOVMSRuntimeStatus, GetInstalledModels, DeleteInstalledModel, GetAvailableDevices, Chat, GetPipelineFilters, RunBenchmark, UpdateOVMSToLatest } from '../wailsjs/go/main/App'
 import { EventsOn, BrowserOpenURL } from '../wailsjs/runtime/runtime'
 
 const DEFAULT_OPTS_TEXT_GEN = '{}'
@@ -68,8 +68,7 @@ function LatencyChart({ latencies, avg, p95 }) {
 }
 
 export default function App() {
-  const { t, i18n } = useTranslation()
-  const [langReady, setLangReady] = useState(false)
+  const { t } = useTranslation()
   const [tab, setTab] = useState('server')
   const [config, setConfig] = useState({
     install_dir: '',
@@ -184,14 +183,6 @@ export default function App() {
   useEffect(() => {
     if (startupRan.current) return
     startupRan.current = true
-
-    GetSystemLanguage().then(lang => {
-      if (lang && lang.toLowerCase().startsWith('zh')) {
-        i18n.changeLanguage('zh').then(() => setLangReady(true))
-      } else {
-        setLangReady(true)
-      }
-    }).catch(() => setLangReady(true))
 
     Promise.all([GetConfig(), GetStartupEnabled(), GetPipelineFilters()]).then(([cfg, su, filters]) => {
       setConfig(cfg)
@@ -426,8 +417,6 @@ export default function App() {
     selectedModel.toLowerCase().startsWith('openvino/')
 
   const allReady = status?.deps_ready && status?.ovms_ready
-
-  if (!langReady) return <div className="loading-screen"><div className="loading-content"><div className="loading-title">Turintech - OpenVINO Desktop</div></div></div>
 
   if (!status || !allReady) {
     return (
