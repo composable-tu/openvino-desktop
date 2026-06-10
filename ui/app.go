@@ -107,6 +107,12 @@ func (a *App) extractAssets() error {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.loadConfig()
+
+	// Emit system language so the frontend can switch locale without relying
+	// on navigator.language (which WebView2 may always report as "en").
+	if lang, err := getUserLanguage(); err == nil && lang != "" {
+		runtime.EventsEmit(a.ctx, "system-language", lang)
+	}
 	// Kill any orphaned ovms.exe left by a previous process (e.g. wails dev hot-reload).
 	tk := exec.Command("taskkill", "/F", "/T", "/IM", "ovms.exe")
 	hideWindow(tk)

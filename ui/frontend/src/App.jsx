@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
-import { GetConfig, SaveConfig, PrepareOVMS, ResetOVMS, ResetModels, CheckStatus, GetStartupEnabled, SetStartup, SearchModels, ExportTextGen, ExportEmbeddings, PullModel, StartOVMS, StopOVMS, IsOVMSRunning, GetOVMSRuntimeStatus, GetInstalledModels, DeleteInstalledModel, GetAvailableDevices, Chat, GetPipelineFilters, RunBenchmark, UpdateOVMSToLatest, GetSystemLanguage } from '../wailsjs/go/main/App'
+import { GetConfig, SaveConfig, PrepareOVMS, ResetOVMS, ResetModels, CheckStatus, GetStartupEnabled, SetStartup, SearchModels, ExportTextGen, ExportEmbeddings, PullModel, StartOVMS, StopOVMS, IsOVMSRunning, GetOVMSRuntimeStatus, GetInstalledModels, DeleteInstalledModel, GetAvailableDevices, Chat, GetPipelineFilters, RunBenchmark, UpdateOVMSToLatest } from '../wailsjs/go/main/App'
 import { EventsOn, BrowserOpenURL } from '../wailsjs/runtime/runtime'
 
 const DEFAULT_OPTS_TEXT_GEN = '{}'
@@ -137,7 +137,12 @@ export default function App() {
   useEffect(() => {
     const offUpdate = EventsOn('update-available', info => setUpdateInfo(info))
     const offOvms = EventsOn('ovms-update-available', url => setOvmsUpdateUrl(url))
-    return () => { if (offUpdate) offUpdate(); if (offOvms) offOvms() }
+    const offLang = EventsOn('system-language', lang => {
+      if (lang && lang.toLowerCase().startsWith('zh')) {
+        i18n.changeLanguage('zh')
+      }
+    })
+    return () => { if (offUpdate) offUpdate(); if (offOvms) offOvms(); if (offLang) offLang() }
   }, [])
 
   useEffect(() => {
@@ -184,13 +189,6 @@ export default function App() {
   useEffect(() => {
     if (startupRan.current) return
     startupRan.current = true
-
-    // Detect OS language from Go backend
-    GetSystemLanguage().then(lang => {
-      if (lang && lang.toLowerCase().startsWith('zh')) {
-        i18n.changeLanguage('zh')
-      }
-    }).catch(() => {})
 
     Promise.all([GetConfig(), GetStartupEnabled(), GetPipelineFilters()]).then(([cfg, su, filters]) => {
       setConfig(cfg)
