@@ -17,13 +17,4 @@ i18n
     },
   })
 
-// Detect language: navigator first (sync, instant), then Go backend (async)
-const navLangs = navigator.languages || [navigator.language || navigator.userLanguage || '']
-for (const lang of navLangs) {
-  if (lang && lang.toLowerCase().startsWith('zh')) {
-    i18n.changeLanguage('zh')
-    break
-  }
-}
-
 export default i18n
