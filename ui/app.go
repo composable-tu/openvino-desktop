@@ -173,6 +173,15 @@ func (a *App) GetVersion() string {
 	return Version
 }
 
+// GetSystemLanguage returns the OS language code (e.g. "zh-CN", "en-US").
+func (a *App) GetSystemLanguage() string {
+	lang, err := getUserLanguage()
+	if err != nil {
+		return "en"
+	}
+	return lang
+}
+
 // cmpVersions compares two dot-separated numeric version strings.
 // Returns -1 if a < b, 0 if equal, 1 if a > b.
 func cmpVersions(a, b string) int {
