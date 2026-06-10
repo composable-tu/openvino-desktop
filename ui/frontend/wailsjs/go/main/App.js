@@ -46,6 +46,10 @@ export function GetStartupEnabled() {
   return window['go']['main']['App']['GetStartupEnabled']();
 }
 
+export function GetSystemLanguage() {
+  return window['go']['main']['App']['GetSystemLanguage']();
+}
+
 export function GetVersion() {
   return window['go']['main']['App']['GetVersion']();
 }
