@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import './i18n'
 import './App.css'
 
-import { GetSystemLanguage } from './wailsjs/go/main/App'
+import { GetSystemLanguage } from '../wailsjs/go/main/App'
 import i18n from './i18n'
 
 GetSystemLanguage().then(lang => {
