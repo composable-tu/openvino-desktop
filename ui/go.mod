@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/Xuanwo/go-locale v1.1.3 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/getlantern/context v0.0.0-20190109183933-c447772a6520 // indirect
 	github.com/getlantern/errors v0.0.0-20190325191628-abdb3e3e36f7 // indirect
