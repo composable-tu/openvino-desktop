@@ -24,6 +24,8 @@ export function GetPipelineFilters():Promise<Array<string>>;
 
 export function GetStartupEnabled():Promise<boolean>;
 
+export function GetSystemLanguage():Promise<string>;
+
 export function GetVersion():Promise<string>;
 
 export function IsOVMSRunning():Promise<boolean>;

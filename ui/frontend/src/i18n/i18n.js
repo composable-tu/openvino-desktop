@@ -17,26 +17,13 @@ i18n
     },
   })
 
-// Detect language from Go backend (OS system language)
-const detectFromOS = async () => {
-  try {
-    const { GetSystemLanguage } = await import('../../wailsjs/go/main/App')
-    const lang = await GetSystemLanguage()
-    if (lang && lang.toLowerCase().startsWith('zh')) {
-      i18n.changeLanguage('zh')
-    }
-  } catch {
-    // fallback: try navigator
-    const languages = navigator.languages || [navigator.language || navigator.userLanguage || '']
-    for (const lang of languages) {
-      if (lang && lang.toLowerCase().startsWith('zh')) {
-        i18n.changeLanguage('zh')
-        break
-      }
-    }
+// Detect language: navigator first (sync, instant), then Go backend (async)
+const navLangs = navigator.languages || [navigator.language || navigator.userLanguage || '']
+for (const lang of navLangs) {
+  if (lang && lang.toLowerCase().startsWith('zh')) {
+    i18n.changeLanguage('zh')
+    break
   }
 }
-
-detectFromOS()
 
 export default i18n
