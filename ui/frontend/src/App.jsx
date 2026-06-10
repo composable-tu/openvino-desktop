@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { GetConfig, SaveConfig, PrepareOVMS, ResetOVMS, ResetModels, CheckStatus, GetStartupEnabled, SetStartup, SearchModels, ExportTextGen, ExportEmbeddings, PullModel, StartOVMS, StopOVMS, IsOVMSRunning, GetOVMSRuntimeStatus, GetInstalledModels, DeleteInstalledModel, GetAvailableDevices, Chat, GetPipelineFilters, RunBenchmark, UpdateOVMSToLatest } from '../wailsjs/go/main/App'
 import { EventsOn, BrowserOpenURL } from '../wailsjs/runtime/runtime'
 
@@ -67,6 +68,7 @@ function LatencyChart({ latencies, avg, p95 }) {
 }
 
 export default function App() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('server')
   const [config, setConfig] = useState({
     install_dir: '',
@@ -297,7 +299,7 @@ export default function App() {
     setRunning(true)
     action()
       .then(() => {
-        setLogs(prev => [...prev, '--- Done ---'])
+        setLogs(prev => [...prev, t('status.done')])
         CheckStatus().then(setStatus)
         loadInstalledModels()
       })
@@ -323,7 +325,7 @@ export default function App() {
   }
 
   const handleReset = async () => {
-    if (!window.confirm('This will delete the OVMS installation and re-download it. Continue?')) return
+    if (!window.confirm(t('confirm.reset_ovms'))) return
     setStatus(null)
     setRunning(true)
     try {
@@ -338,7 +340,7 @@ export default function App() {
 
   const handleUpdateOVMS = async () => {
     if (!ovmsUpdateUrl) return
-    if (!window.confirm('This will download and install the latest OVMS version. Continue?')) return
+    if (!window.confirm(t('confirm.update_ovms'))) return
     setStatus(null)
     setRunning(true)
     try {
@@ -353,7 +355,7 @@ export default function App() {
   }
 
   const handleResetModels = async () => {
-    if (!window.confirm('This will delete the models folder and all config JSON files. Continue?')) return
+    if (!window.confirm(t('confirm.reset_models'))) return
     setRunning(true)
     setError(null)
     try {
@@ -380,10 +382,10 @@ export default function App() {
     const modelName = deleteConfirm
     setDeleteConfirm(null)
     setRunning(true)
-    setLogs([`Deleting model ${modelName}...`])
+    setLogs([t('models.deleting_model', { name: modelName })])
     DeleteInstalledModel(modelName)
       .then(() => {
-        setLogs(prev => [...prev, `Model ${modelName} deleted successfully`, '--- Done ---'])
+        setLogs(prev => [...prev, t('models.model_deleted', { name: modelName }), t('status.done')])
         loadInstalledModels()
       })
       .catch(err => setError(String(err)))
@@ -420,7 +422,7 @@ export default function App() {
     return (
       <div className="loading-screen">
         <div className="loading-content">
-          <div className="loading-title">Turintech - OpenVINO Desktop</div>
+          <div className="loading-title">{t('app.title')}</div>
           <div className="loading-step">{initStep}</div>
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progress}%` }} />
@@ -438,7 +440,7 @@ export default function App() {
             <>
               <div className="error">{initError}</div>
               <button className="btn-primary" style={{ marginTop: 16 }} onClick={runSetup}>
-                Retry
+                {t('buttons.retry')}
               </button>
             </>
           )}
@@ -450,15 +452,15 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="app-title">Turintech - OpenVINO Desktop</span>
+        <span className="app-title">{t('app.title')}</span>
         <nav className="tabs">
-          {['server', 'models', 'chat', 'benchmark', 'settings'].map(t => {
-            const label = t === 'server' ? 'Models Server' : t.charAt(0).toUpperCase() + t.slice(1)
+          {['server', 'models', 'chat', 'benchmark', 'settings'].map(tabKey => {
+            const label = t('tabs.' + tabKey)
             return (
               <button
-                key={t}
-                className={`tab ${tab === t ? 'active' : ''}`}
-                onClick={() => setTab(t)}
+                key={tabKey}
+                className={`tab ${tab === tabKey ? 'active' : ''}`}
+                onClick={() => setTab(tabKey)}
               >
                 {label}
               </button>
@@ -473,7 +475,7 @@ export default function App() {
           />
           {updateInfo && (
             <button className="status-badge update-badge" onClick={() => BrowserOpenURL(updateInfo.url)} title={updateInfo.release_notes || `Download ${updateInfo.version}`}>
-              <span className="status-dot" />New Version
+              <span className="status-dot" />{t('status.new_version')}
             </button>
           )}
         </div>
@@ -483,12 +485,12 @@ export default function App() {
         {tab === 'server' && (
           <div className="panel">
             <div className="devices-info">
-              <small>Available OpenVINO devices: <strong>{availableDevices.join(', ')}</strong></small>
+              <small>{t('server.available_devices', { devices: availableDevices.join(', ') })}</small>
             </div>
             <div className="action-card">
                     <div className="action-card-body">
-                      <h3>OVMS Server</h3>
-                      <p>Start the OpenVINO Model Server on port 9000 (REST {config.ovms_rest_port || 8080}).</p>
+                      <h3>{t('server.heading')}</h3>
+                      <p>{t('server.description', { port: config.ovms_rest_port || 8080 })}</p>
                     </div>
                     <div className="server-controls">
                       {!serverRunning
@@ -497,12 +499,12 @@ export default function App() {
                             setServerLogs([])
                             StartOVMS().catch(err => setServerLogs(prev => [...prev, '--- Error: ' + String(err) + ' ---']))
                           }}>
-                            Start Server
+                            {t('buttons.start_server')}
                           </button>
                         )
                         : (
                           <button className="btn-reset" onClick={() => StopOVMS().catch(() => {})}>
-                            Stop Server
+                            {t('buttons.stop_server')}
                           </button>
                         )
                       }
@@ -525,24 +527,24 @@ export default function App() {
         {tab === 'models' && (
           <div className="panel">
             <div className="devices-info">
-              <small>Available OpenVINO devices: <strong>{availableDevices.join(', ')}</strong></small>
+              <small>{t('server.available_devices', { devices: availableDevices.join(', ') })}</small>
             </div>
             <>
               {installedModels.length > 0 && (
                     <div className="installed-models-section">
-                      <h3>Available Models</h3>
+                      <h3>{t('models.available_models')}</h3>
                       <div className="installed-models-list">
                         {installedModels.map(model => (
                           <div key={model.name} className="installed-model-card">
                             <div className="installed-model-info">
                               <div className="installed-model-name">{model.name}</div>
                               <div className="installed-model-device">
-                                <span className="device-label">Target Device:</span>
+                                <span className="device-label">{t('models.target_device')}</span>
                                 <span className="device-value">{model.target_device}</span>
                               </div>
                               {model.task && (
                                 <div className="installed-model-device">
-                                  <span className="device-label">Type:</span>
+                                  <span className="device-label">{t('models.type')}</span>
                                   <span className="device-value">{model.task}</span>
                                 </div>
                               )}
@@ -551,7 +553,7 @@ export default function App() {
                               className="btn-delete-model"
                               disabled={running}
                               onClick={() => handleDeleteModel(model.name)}
-                              title="Delete model"
+                              title={t('models.delete_model_tooltip')}
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
@@ -564,10 +566,10 @@ export default function App() {
                   )}
 
                   <div className="search-section">
-                    <h3>Hugging face models</h3>
+                    <h3>{t('models.huggingface_models')}</h3>
                     {(config.search_tags || []).length > 0 && (
                       <div className="filter-group">
-                        <span className="filter-label">Quick search</span>
+                        <span className="filter-label">{t('models.quick_search')}</span>
                         <div className="search-tags">
                           {(config.search_tags || []).map(tag => (
                             <button key={tag} className="search-tag" onClick={() => quickSearch(tag)}>{tag}</button>
@@ -583,8 +585,8 @@ export default function App() {
                         .filter(g => g.types.length > 0)
                       if (groups.length === 0) return null
                       return (
-                        <div className="filter-group">
-                          <span className="filter-label">Filter by type</span>
+                      <div className="filter-group">
+                        <span className="filter-label">{t('models.filter_by_type')}</span>
                           <div className="filter-chips-grouped">
                             {groups.map(g => (
                               <div key={g.key} className="filter-chip-group">
@@ -615,10 +617,10 @@ export default function App() {
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                        placeholder="Search Hugging Face models…"
+                        placeholder={t('models.search_placeholder')}
                       />
                       <button className="btn-primary" disabled={searching} onClick={handleSearch}>
-                        {searching ? 'Searching…' : 'Search'}
+                        {searching ? t('buttons.searching') : t('buttons.search')}
                       </button>
                     </div>
 
@@ -638,13 +640,13 @@ export default function App() {
 
                         {selectedModel && (
                           <div className="export-opts">
-                            <label>Target Device
+                            <label>{t('models.target_device_label')}
                               <select value={targetDevice} onChange={e => setTargetDevice(e.target.value)}>
                                 {availableDevices.map(d => <option key={d}>{d}</option>)}
                               </select>
                             </label>
                             {!isSelectedOV && (
-                              <label style={{marginTop: 10}}>Extra Options
+                              <label style={{marginTop: 10}}>{t('models.extra_options')}
                                 <textarea
                                   className={`opts-raw-editor${extraOptsError ? ' opts-editor-error' : ''}`}
                                   value={extraOptsText}
@@ -655,12 +657,12 @@ export default function App() {
                                     catch { setExtraOptsError(true) }
                                   }}
                                 />
-                                {extraOptsError && <div className="opts-editor-error-msg">Invalid JSON</div>}
+                                {extraOptsError && <div className="opts-editor-error-msg">{t('models.invalid_json')}</div>}
                                 <div className="opts-presets">
                                   {[
-                                    { label: 'Parsers', values: { tool_parser: 'hermes3', reasoning_parser: 'qwen3' } },
-                                    { label: 'KV Cache', values: { kv_cache_precision: 'u8' } },
-                                    { label: 'Batching', values: { max_num_batched_tokens: 4096, max_num_seqs: 256 } },
+                                    { label: t('presets.parsers'), values: { tool_parser: 'hermes3', reasoning_parser: 'qwen3' } },
+                                    { label: t('presets.kv_cache'), values: { kv_cache_precision: 'u8' } },
+                                    { label: t('presets.batching'), values: { max_num_batched_tokens: 4096, max_num_seqs: 256 } },
                                   ].map(preset => (
                                     <button
                                       key={preset.label}
@@ -679,7 +681,7 @@ export default function App() {
                                   <a
                                     className="opts-docs-link"
                                     onClick={() => BrowserOpenURL('https://docs.openvino.ai/2026/model-server/ovms_docs_parameters.html')}
-                                  >All options ↗</a>
+                                  >{t('buttons.all_options')}</a>
                                 </div>
                               </label>
                             )}
@@ -701,11 +703,11 @@ export default function App() {
                               }
                             }}
                           >
-                            {running ? 'Running…' : isSelectedOV ? 'Pull' : 'Export'}
+                            {running ? t('buttons.running') : isSelectedOV ? t('buttons.pull') : t('buttons.export')}
                           </button>
                           {selectedModel && !isSelectedOV && !pipelineFilters.includes(selectedModelInfo?.pipeline_tag) && (
                             <span className="unsupported-model-msg">
-                              Model type "{selectedModelInfo?.pipeline_tag || 'unknown'}" is not supported
+                              {t('models.unsupported_model_type', { type: selectedModelInfo?.pipeline_tag || 'unknown' })}
                             </span>
                           )}
                           {selectedModel && (
@@ -713,7 +715,7 @@ export default function App() {
                               className="btn-hf-link"
                               onClick={() => BrowserOpenURL(`https://huggingface.co/${selectedModel}`)}
                             >
-                              🤗 View on Hugging Face ↗
+                              {t('buttons.view_on_huggingface')}
                             </button>
                           )}
                         </div>
@@ -725,7 +727,7 @@ export default function App() {
                     {error && <div className="error">{error}</div>}
                     <div className="log-box">
                       {logs.length === 0 && !error
-                        ? <div className="log-line log-empty">Export output will appear here…</div>
+                        ? <div className="log-line log-empty">{t('models.export_output_placeholder')}</div>
                         : logs.map((line, i) => (
                           <div key={i} className={line.startsWith('---') ? 'log-done' : 'log-line'}>{line}</div>
                         ))
@@ -745,12 +747,12 @@ export default function App() {
             <div className="chat-panel">
               {!serverRunning && (
                 <div className="chat-notice chat-notice--warn">
-                  OVMS server is not running. Go to the <strong>Models Server</strong> tab and start it first.
+                  <span dangerouslySetInnerHTML={{ __html: t('chat.server_not_running') }} />
                 </div>
               )}
               {serverRunning && textGenModels.length === 0 && (
                 <div className="chat-notice chat-notice--warn">
-                  No text-generation or image-text-to-text models installed. Go to the <strong>Models</strong> tab to pull or export one.
+                  <span dangerouslySetInnerHTML={{ __html: t('chat.no_text_gen_models') }} />
                 </div>
               )}
 
@@ -761,14 +763,14 @@ export default function App() {
                   disabled={chatDisabled}
                   onChange={e => { setChatModel(e.target.value); setChatMessages([]); setChatError(null) }}
                 >
-                  {chatModel === '' && <option value="">Select model…</option>}
+                  {chatModel === '' && <option value="">{t('chat.select_model')}</option>}
                   {textGenModels.map(m => (
                     <option key={m.name} value={m.name}>{m.name}</option>
                   ))}
                 </select>
                 {chatMessages.length > 0 && (
                   <button className="btn-ghost" onClick={() => { setChatMessages([]); setChatError(null) }}>
-                    Clear
+                    {t('buttons.clear')}
                   </button>
                 )}
               </div>
@@ -776,18 +778,18 @@ export default function App() {
               <div className="chat-messages">
                 {!chatDisabled && chatMessages.length === 0 && !chatError && (
                   <div className="chat-empty">
-                    {chatModel ? 'Send a message to start chatting.' : 'Select a model above to begin.'}
+                    {chatModel ? t('chat.empty_ready') : t('chat.empty_no_model')}
                   </div>
                 )}
                 {chatMessages.map((msg, i) => (
                   <div key={i} className={`chat-bubble chat-bubble--${msg.role}`}>
-                    <div className="chat-bubble-role">{msg.role === 'user' ? 'You' : 'Assistant'}</div>
+                    <div className="chat-bubble-role">{msg.role === 'user' ? t('chat.role_user') : t('chat.role_assistant')}</div>
                     <div className="chat-bubble-content">{msg.content}</div>
                   </div>
                 ))}
                 {chatLoading && (
                   <div className="chat-bubble chat-bubble--assistant">
-                    <div className="chat-bubble-role">Assistant</div>
+                    <div className="chat-bubble-role">{t('chat.role_assistant')}</div>
                     <div className="chat-typing"><span /><span /><span /></div>
                   </div>
                 )}
@@ -799,9 +801,9 @@ export default function App() {
                 <textarea
                   className="chat-input"
                   placeholder={
-                    !serverRunning ? 'Server is not running…' :
-                    textGenModels.length === 0 ? 'No models available…' :
-                    chatModel ? 'Type a message…' : 'Select a model first…'
+                    !serverRunning ? t('chat.placeholder_server_off') :
+                    textGenModels.length === 0 ? t('chat.placeholder_no_models') :
+                    chatModel ? t('chat.placeholder_type_message') : t('chat.placeholder_select_model')
                   }
                   disabled={chatDisabled || !chatModel || chatLoading}
                   value={chatInput}
@@ -816,7 +818,7 @@ export default function App() {
                   disabled={chatDisabled || !chatModel || !chatInput.trim() || chatLoading}
                   onClick={sendChat}
                 >
-                  {chatLoading ? '…' : 'Send'}
+                  {chatLoading ? '…' : t('buttons.send')}
                 </button>
               </div>
             </div>
@@ -827,13 +829,13 @@ export default function App() {
           <div className="panel">
             {!serverRunning && (
               <div className="chat-notice chat-notice--warn">
-                OVMS server is not running. Go to the <strong>Models Server</strong> tab and start it first.
+                <span dangerouslySetInnerHTML={{ __html: t('benchmark.server_not_running') }} />
               </div>
             )}
 
             <div className="bench-config">
               <div className="bench-config-row">
-                <label>Iterations <span className="bench-iter-val">{benchIterations}</span></label>
+                <label>{t('benchmark.iterations')} <span className="bench-iter-val">{benchIterations}</span></label>
                 <input
                   type="range" min={1} max={20} value={benchIterations}
                   onChange={e => setBenchIterations(parseInt(e.target.value))}
@@ -841,7 +843,7 @@ export default function App() {
                 />
               </div>
               <div className="bench-config-row">
-                <label>Prompt</label>
+                <label>{t('benchmark.prompt')}</label>
                 <textarea
                   className="bench-prompt"
                   value={benchPrompt}
@@ -854,16 +856,16 @@ export default function App() {
             {(() => {
               const benchModels = installedModels.filter(m => m.task === 'text-generation' || m.task === 'image-text-to-text')
               if (benchModels.length === 0) return (
-                <div className="empty-state">No text-generation models installed. Go to the Models tab to pull or export one.</div>
+                <div className="empty-state">{t('benchmark.no_models')}</div>
               )
               return (
               <div className="bench-table-wrap">
                 <table className="bench-table">
                   <thead>
                     <tr>
-                      <th>Model</th>
-                      <th>Task</th>
-                      <th>Device</th>
+                      <th>{t('benchmark.col_model')}</th>
+                      <th>{t('benchmark.col_task')}</th>
+                      <th>{t('benchmark.col_device')}</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -891,7 +893,7 @@ export default function App() {
                                   }
                                 }}
                               >
-                                {isRunning ? 'Running…' : result ? 'Re-run' : 'Run'}
+                                {isRunning ? t('buttons.running') : result ? t('buttons.re_run') : t('buttons.run')}
                               </button>
                             </td>
                           </tr>
@@ -902,28 +904,28 @@ export default function App() {
                                   <div className="error">{result.error}</div>
                                 ) : (
                                   <div className="bench-result">
-                                    <div className="bench-stats">
-                                      <div className="bench-stat">
-                                        <span className="bench-stat-label">Min</span>
-                                        <span className="bench-stat-value">{result.min_latency_ms.toFixed(0)} ms</span>
-                                      </div>
-                                      <div className="bench-stat">
-                                        <span className="bench-stat-label">Avg</span>
-                                        <span className="bench-stat-value bench-stat-avg">{result.avg_latency_ms.toFixed(0)} ms</span>
-                                      </div>
-                                      <div className="bench-stat">
-                                        <span className="bench-stat-label">P95</span>
-                                        <span className="bench-stat-value bench-stat-p95">{result.p95_latency_ms.toFixed(0)} ms</span>
-                                      </div>
-                                      <div className="bench-stat">
-                                        <span className="bench-stat-label">Max</span>
-                                        <span className="bench-stat-value">{result.max_latency_ms.toFixed(0)} ms</span>
-                                      </div>
-                                      <div className="bench-stat">
-                                        <span className="bench-stat-label">Throughput</span>
-                                        <span className="bench-stat-value">{result.throughput_rps.toFixed(2)} req/s</span>
-                                      </div>
+                                  <div className="bench-stats">
+                                    <div className="bench-stat">
+                                      <span className="bench-stat-label">{t('benchmark.stat_min')}</span>
+                                      <span className="bench-stat-value">{result.min_latency_ms.toFixed(0)} {t('benchmark.unit_ms')}</span>
                                     </div>
+                                    <div className="bench-stat">
+                                      <span className="bench-stat-label">{t('benchmark.stat_avg')}</span>
+                                      <span className="bench-stat-value bench-stat-avg">{result.avg_latency_ms.toFixed(0)} {t('benchmark.unit_ms')}</span>
+                                    </div>
+                                    <div className="bench-stat">
+                                      <span className="bench-stat-label">{t('benchmark.stat_p95')}</span>
+                                      <span className="bench-stat-value bench-stat-p95">{result.p95_latency_ms.toFixed(0)} {t('benchmark.unit_ms')}</span>
+                                    </div>
+                                    <div className="bench-stat">
+                                      <span className="bench-stat-label">{t('benchmark.stat_max')}</span>
+                                      <span className="bench-stat-value">{result.max_latency_ms.toFixed(0)} {t('benchmark.unit_ms')}</span>
+                                    </div>
+                                    <div className="bench-stat">
+                                      <span className="bench-stat-label">{t('benchmark.stat_throughput')}</span>
+                                      <span className="bench-stat-value">{result.throughput_rps.toFixed(2)} {t('benchmark.unit_rps')}</span>
+                                    </div>
+                                  </div>
                                     <LatencyChart latencies={result.latencies} avg={result.avg_latency_ms} p95={result.p95_latency_ms} />
                                   </div>
                                 )}
@@ -945,37 +947,37 @@ export default function App() {
           <div className="panel">
             <div className="fields">
               <div className="field">
-                <label>Setup Folder</label>
+                <label>{t('settings.setup_folder')}</label>
                 <input
                   value={config.install_dir}
                   onChange={e => setConfig(c => ({ ...c, install_dir: e.target.value }))}
-                  placeholder="e.g. C:\Users\user\openvino-desktop"
+                  placeholder={t('settings.setup_folder_placeholder')}
                 />
-                <small>Base directory where OVMS will be installed.</small>
+                <small>{t('settings.setup_folder_help')}</small>
               </div>
 
               <div className="field">
-                <label>OVMS Download URL</label>
+                <label>{t('settings.ovms_download_url')}</label>
                 <input
                   value={config.ovms_url}
                   onChange={e => setConfig(c => ({ ...c, ovms_url: e.target.value }))}
-                  placeholder="https://github.com/openvinotoolkit/model_server/releases/download/…/ovms_windows_python_on.zip"
+                  placeholder={t('settings.ovms_download_url_placeholder')}
                 />
-                <small>URL to the OVMS zip archive for Windows.</small>
+                <small>{t('settings.ovms_download_url_help')}</small>
               </div>
 
               <div className="field">
-                <label>UV Download URL</label>
+                <label>{t('settings.uv_download_url')}</label>
                 <input
                   value={config.uv_url}
                   onChange={e => setConfig(c => ({ ...c, uv_url: e.target.value }))}
-                  placeholder="https://github.com/turintech/openvino-desktop/releases/download/uv/uv.exe"
+                  placeholder={t('settings.uv_download_url_placeholder')}
                 />
-                <small>URL to download uv.exe used for setting up the export environment.</small>
+                <small>{t('settings.uv_download_url_help')}</small>
               </div>
 
               <div className="field">
-                <label>REST API Port</label>
+                <label>{t('settings.rest_api_port')}</label>
                 <input
                   type="number"
                   min="1024"
@@ -983,11 +985,11 @@ export default function App() {
                   value={config.api_port}
                   onChange={e => setConfig(c => ({ ...c, api_port: parseInt(e.target.value) || 3333 }))}
                 />
-                <small>Port for the local REST API (default: 3333). Requires restart to take effect.</small>
+                <small>{t('settings.rest_api_port_help')}</small>
               </div>
 
               <div className="field">
-                <label>OVMS REST Port</label>
+                <label>{t('settings.ovms_rest_port')}</label>
                 <input
                   type="number"
                   min="1024"
@@ -995,27 +997,27 @@ export default function App() {
                   value={config.ovms_rest_port}
                   onChange={e => setConfig(c => ({ ...c, ovms_rest_port: parseInt(e.target.value) || 8080 }))}
                 />
-                <small>Port the OVMS inference server listens on (default: 8080). Requires restart to take effect.</small>
+                <small>{t('settings.ovms_rest_port_help')}</small>
               </div>
 
               <div className="field">
-                <label>Log Level</label>
+                <label>{t('settings.log_level')}</label>
                 <select
                   value={config.log_level || 'INFO'}
                   onChange={e => setConfig(c => ({ ...c, log_level: e.target.value }))}
                 >
-                  <option value="DEBUG">DEBUG</option>
-                  <option value="INFO">INFO</option>
-                  <option value="WARNING">WARNING</option>
-                  <option value="ERROR">ERROR</option>
+                  <option value="DEBUG">{t('settings.log_level_debug')}</option>
+                  <option value="INFO">{t('settings.log_level_info')}</option>
+                  <option value="WARNING">{t('settings.log_level_warning')}</option>
+                  <option value="ERROR">{t('settings.log_level_error')}</option>
                 </select>
-                <small>OVMS server log verbosity. Requires restart to take effect.</small>
+                <small>{t('settings.log_level_help')}</small>
               </div>
 
             </div>
 
             <div className="field">
-              <label>Search Limit</label>
+              <label>{t('settings.search_limit')}</label>
               <input
                 type="number"
                 min="1"
@@ -1023,11 +1025,11 @@ export default function App() {
                 value={config.search_limit || 30}
                 onChange={e => setConfig(c => ({ ...c, search_limit: parseInt(e.target.value) || 30 }))}
               />
-              <small>Max number of models returned per search (default 30).</small>
+              <small>{t('settings.search_limit_help')}</small>
             </div>
 
             <div className="field">
-              <label>Model Categories</label>
+              <label>{t('settings.model_categories')}</label>
               <div className="category-toggles">
                 {Object.entries(CATEGORY_GROUPS).map(([key, g]) => {
                   const checked = (config.enabled_categories || ['text']).includes(key)
@@ -1048,16 +1050,16 @@ export default function App() {
                           setActiveFilters(allowed)
                         }}
                       />
-                      {g.label}
+                      {key === 'text' ? t('models.category_text') : t('models.category_embeddings')}
                     </label>
                   )
                 })}
               </div>
-              <small>Choose which model categories are available in the Models tab.</small>
+              <small>{t('settings.model_categories_help')}</small>
             </div>
 
             <div className="field">
-              <label>Search Tags</label>
+              <label>{t('settings.search_tags')}</label>
               <div className="tag-editor">
                 {(config.search_tags || []).map(tag => (
                   <span key={tag} className="tag-pill">
@@ -1075,16 +1077,16 @@ export default function App() {
                       setNewTag('')
                     }
                   }}
-                  placeholder="Add tag…"
+                  placeholder={t('settings.search_tags_placeholder')}
                 />
               </div>
-              <small>Clickable shortcuts on the Export search. Press Enter to add.</small>
+              <small>{t('settings.search_tags_help')}</small>
             </div>
 
             <label className="toggle-row">
               <span className="toggle-label">
-                Run on startup
-                <small>Launch automatically when Windows starts.</small>
+                {t('settings.run_on_startup')}
+                <small>{t('settings.run_on_startup_help')}</small>
               </span>
               <input
                 type="checkbox"
@@ -1098,15 +1100,15 @@ export default function App() {
 
             <div className="reset-row">
               <button className="btn-reset" disabled={running} onClick={handleResetModels}>
-                Reset Models
+                {t('buttons.reset_models')}
               </button>
               <button className="btn-reset" disabled={running} onClick={handleReset}>
-                Reset OVMS
+                {t('buttons.reset_ovms')}
               </button>
             </div>
 
             <button className="btn-save" onClick={handleSave}>
-              {saved ? 'Saved!' : 'Save Settings'}
+              {saved ? t('buttons.saved') : t('buttons.save_settings')}
             </button>
           </div>
         )}
@@ -1115,18 +1117,18 @@ export default function App() {
       {deleteConfirm && (
         <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
           <div className="modal-content modal-confirm" onClick={e => e.stopPropagation()}>
-            <h3>Delete Model</h3>
+            <h3>{t('confirm.delete_model_title')}</h3>
             <div className="modal-body">
               <p className="modal-confirm-text">
-                Are you sure you want to delete <strong>{deleteConfirm}</strong>?
+                <span dangerouslySetInnerHTML={{ __html: t('confirm.delete_model_question', { name: deleteConfirm }) }} />
               </p>
               <p className="modal-confirm-warning">
-                This will remove the model from config.json and delete its files.
+                {t('confirm.delete_model_warning')}
               </p>
             </div>
             <div className="modal-actions">
-              <button className="btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
-              <button className="btn-delete" onClick={confirmDelete}>Delete</button>
+              <button className="btn-ghost" onClick={() => setDeleteConfirm(null)}>{t('buttons.cancel')}</button>
+              <button className="btn-delete" onClick={confirmDelete}>{t('buttons.delete')}</button>
             </div>
           </div>
         </div>
